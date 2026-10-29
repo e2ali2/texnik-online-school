@@ -11,6 +11,7 @@ document.querySelectorAll('[data-diagnostic]').forEach(button => {
   button.addEventListener('click', () => {
     opener = button;
     status.textContent = '';
+    document.querySelector('.mail-fallback').hidden = true;
     document.querySelector('#copy-diagnostic').hidden = false;
     document.querySelector('#diagnostic-copy').hidden = true;
     dialog.showModal();
@@ -39,10 +40,11 @@ form.addEventListener('submit', async event => {
   form.setAttribute('aria-busy', 'true');
   status.textContent = '';
   try {
-    const response = await fetch('https://texnik-online-school.hushed-guppy-8246.chatgpt.site/api/diagnostic', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(Object.fromEntries(new FormData(form))), signal: AbortSignal.timeout(20000)});
-    const result = await response.json();
+    const response = await fetch('https://texnik-online-school.hushed-guppy-8246.chatgpt.site/api/diagnostic', {method: 'POST', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body: JSON.stringify(Object.fromEntries(new FormData(form))), signal: AbortSignal.timeout(20000)});
+    const result = await response.json().catch(() => ({error:'Сервер вернул неожиданный ответ. Попробуйте позже или свяжитесь с нами по почте.'}));
     if (!response.ok || result.ok !== true) throw new Error(result.error || 'Не удалось отправить заявку.');
     status.textContent = 'Заявка отправлена! Мы свяжемся с вами для записи на знакомство с курсом.';
+    document.querySelector('.mail-fallback').hidden = true;
     form.reset();
     subjectInput.value = '';
     document.querySelector('#subject-value').textContent = 'Выберите предмет';
@@ -51,7 +53,10 @@ form.addEventListener('submit', async event => {
     subjectTrigger.removeAttribute('aria-invalid');
     document.querySelector('#diagnostic-copy').hidden = true;
   } catch (error) {
-    status.textContent = error.name === 'TimeoutError' || error.name === 'AbortError' ? 'Не удалось подтвердить доставку. Проверьте соединение и попробуйте позже.' : error instanceof TypeError ? 'Не удалось связаться с сервером. Проверьте соединение и попробуйте ещё раз.' : error.message;
+    const contactFallback = document.querySelector('.mail-fallback');
+    contactFallback.hidden = false;
+    document.querySelector('#email-diagnostic').href = 'mailto:' + recipient + '?subject=' + encodeURIComponent('Знакомство с курсом · Тех_НикА') + '&body=' + encodeURIComponent(message());
+    status.textContent = error.name === 'TimeoutError' || error.name === 'AbortError' ? 'Не удалось подтвердить доставку. Проверьте соединение и попробуйте позже.' : error instanceof TypeError ? 'Заявка не отправлена: браузер не смог связаться с сервером. Данные остались в форме. Попробуйте другую сеть или скопируйте заявку и отправьте её на info.okt@bk.ru.' : error.message;
   } finally {
     submitting = false;
     submit.disabled = false;
