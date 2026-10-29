@@ -40,7 +40,7 @@ form.addEventListener('submit', async event => {
   form.setAttribute('aria-busy', 'true');
   status.textContent = '';
   try {
-    const response = await fetch('https://texnik-online-school.hushed-guppy-8246.chatgpt.site/api/diagnostic', {method: 'POST', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body: JSON.stringify(Object.fromEntries(new FormData(form))), signal: AbortSignal.timeout(20000)});
+    const response = await fetch(['localhost','127.0.0.1'].includes(location.hostname) ? '/api/diagnostic' : 'https://api.tehnika-courses.ru/', {method: 'POST', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body: JSON.stringify(Object.fromEntries(new FormData(form))), signal: AbortSignal.timeout(30000)});
     const result = await response.json().catch(() => ({error:'Сервер вернул неожиданный ответ. Попробуйте позже или свяжитесь с нами по почте.'}));
     if (!response.ok || result.ok !== true) throw new Error(result.error || 'Не удалось отправить заявку.');
     status.textContent = 'Заявка отправлена! Мы свяжемся с вами для записи на знакомство с курсом.';
