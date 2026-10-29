@@ -1,11 +1,11 @@
 const dialog = document.querySelector('#diagnostic-modal');
 const form = document.querySelector('#diagnostic-form');
 const status = document.querySelector('#diagnostic-status');
-const recipient = 'nick.martirosian@yandex.ru';
+const recipient = 'info.okt@bk.ru';
 let opener;
 const message = () => {
   const data = new FormData(form);
-  return `Здравствуйте! Хочу записаться на знакомство с курсом в ТЕХ_НИК.\n\nИмя: ${data.get('name').trim()}\nФамилия: ${data.get('surname').trim()}\nТелефон: ${data.get('phone').trim()}\nПочта: ${data.get('email').trim()}\nГород: ${data.get('city').trim()}\nЭкзамен: ${data.get('exam')}\nПредмет: ${data.get('subject')}\nКомментарий: ${data.get('comment').trim() || '—'}`;
+  return `Здравствуйте! Хочу записаться на знакомство с курсом в Тех_НикА.\n\nИмя: ${data.get('name').trim()}\nФамилия: ${data.get('surname').trim()}\nТелефон: ${data.get('phone').trim()}\nПочта: ${data.get('email').trim()}\nГород: ${data.get('city').trim()}\nЭкзамен: ${data.get('exam')}\nПредмет: ${data.get('subject')}\nКомментарий: ${data.get('comment').trim() || '—'}`;
 };
 document.querySelectorAll('[data-diagnostic]').forEach(button => {
   button.addEventListener('click', () => {
@@ -131,7 +131,6 @@ const validatePhone = () => {
 phoneInput.addEventListener('input', validatePhone);
 form.addEventListener('submit', validatePhone, true);
 document.querySelector('#copy-diagnostic').addEventListener('click', validatePhone, true);
-
 
 
 
