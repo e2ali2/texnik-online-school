@@ -1,7 +1,9 @@
 const dialog = document.querySelector('#diagnostic-modal');
 const form = document.querySelector('#diagnostic-form');
 const status = document.querySelector('#diagnostic-status');
-const recipient = 'nickitamartirosian@yandex.ru';
+const recipient = 'info.okt@bk.ru';
+const successPanel = document.querySelector('#diagnostic-success');
+const modalDescription = document.querySelector('#diagnostic-description');
 let opener;
 const message = () => {
   const data = new FormData(form);
@@ -11,6 +13,10 @@ document.querySelectorAll('[data-diagnostic]').forEach(button => {
   button.addEventListener('click', () => {
     opener = button;
     status.textContent = '';
+    delete status.dataset.state;
+    successPanel.hidden = true;
+    form.hidden = false;
+    modalDescription.hidden = false;
     document.querySelector('.mail-fallback').hidden = true;
     document.querySelector('#copy-diagnostic').hidden = false;
     document.querySelector('#diagnostic-copy').hidden = true;
@@ -19,6 +25,7 @@ document.querySelectorAll('[data-diagnostic]').forEach(button => {
   });
 });
 document.querySelector('#close-diagnostic').addEventListener('click', () => dialog.close());
+document.querySelector('#close-diagnostic-success').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => {
   if (event.target === dialog) {
     const rect = dialog.getBoundingClientRect();
@@ -42,6 +49,7 @@ form.addEventListener('submit', async event => {
   submit.textContent = 'Отправляем заявку…';
   form.setAttribute('aria-busy', 'true');
   status.textContent = '';
+  delete status.dataset.state;
   const payload = Object.fromEntries(new FormData(form));
   const payloadKey = JSON.stringify(payload);
   if (pendingPayload !== payloadKey) {
@@ -53,7 +61,12 @@ form.addEventListener('submit', async event => {
     const response = await fetch(['localhost','127.0.0.1'].includes(location.hostname) ? '/api/diagnostic' : 'https://api.tehnika-courses.ru/', {method: 'POST', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body: JSON.stringify(payload), signal: AbortSignal.timeout(30000)});
     const result = await response.json().catch(() => ({error:'Сервер вернул неожиданный ответ. Попробуйте позже или свяжитесь с нами по почте.'}));
     if (!response.ok || result.ok !== true) throw new Error(result.error || 'Не удалось отправить заявку.');
-    status.textContent = 'Заявка принята! Мы свяжемся с вами для записи на знакомство с курсом.';
+    status.textContent = '';
+    form.hidden = true;
+    modalDescription.hidden = true;
+    successPanel.hidden = false;
+    successPanel.focus();
+    dialog.scrollTop = 0;
     pendingRequestId = undefined;
     pendingPayload = undefined;
     document.querySelector('.mail-fallback').hidden = true;
@@ -68,7 +81,11 @@ form.addEventListener('submit', async event => {
     const contactFallback = document.querySelector('.mail-fallback');
     contactFallback.hidden = false;
     document.querySelector('#email-diagnostic').href = 'mailto:' + recipient + '?subject=' + encodeURIComponent('Знакомство с курсом · Тех_НикА') + '&body=' + encodeURIComponent(message());
-    status.textContent = error.name === 'TimeoutError' || error.name === 'AbortError' ? 'Не удалось подтвердить доставку. Проверьте соединение и попробуйте позже.' : error instanceof TypeError ? 'Заявка не отправлена: браузер не смог связаться с сервером. Данные остались в форме. Попробуйте другую сеть или скопируйте заявку и отправьте её на nickitamartirosian@yandex.ru.' : error.message;
+    status.dataset.state = 'error';
+    const phoneLink = document.createElement('a');
+    phoneLink.href = 'tel:+79801600679';
+    phoneLink.textContent = '+79801600679';
+    status.replaceChildren(document.createTextNode('Не отправилось, попробуйте ещё раз или свяжитесь с нами по номеру '), phoneLink);
   } finally {
     submitting = false;
     submit.disabled = false;
