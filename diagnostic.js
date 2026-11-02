@@ -4,10 +4,30 @@ const status = document.querySelector('#diagnostic-status');
 const recipient = 'info.okt@bk.ru';
 const successPanel = document.querySelector('#diagnostic-success');
 const modalDescription = document.querySelector('#diagnostic-description');
+// Last tagged campaign, retained for 30 days. Store only known UTM fields.
+const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id'];
+const utmStorageKey = 'texnika-campaign-v1';
+const cleanUtm = value => typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 160) : '';
+const campaign = (() => {
+  const params = new URLSearchParams(location.search);
+  const values = Object.fromEntries(utmKeys.map(key => [key, cleanUtm(params.get(key))]));
+  if (Object.values(values).some(Boolean)) {
+    try { localStorage.setItem(utmStorageKey, JSON.stringify({at: Date.now(), values})); } catch {}
+    return values;
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem(utmStorageKey));
+    if (saved && saved.at <= Date.now() && saved.at > Date.now() - 30 * 86400000)
+      return Object.fromEntries(utmKeys.map(key => [key, cleanUtm(saved.values?.[key])]));
+    localStorage.removeItem(utmStorageKey);
+  } catch {}
+  return values;
+})();
+const campaignText = () => utmKeys.filter(key => campaign[key]).map(key => `${key}: ${campaign[key]}`).join('\n') || 'не указаны';
 let opener;
 const message = () => {
   const data = new FormData(form);
-  return `Здравствуйте! Хочу записаться на знакомство с курсом в Тех_НикА.\n\nИмя: ${data.get('name').trim()}\nФамилия: ${data.get('surname').trim()}\nТелефон: ${data.get('phone').trim()}\nПочта: ${data.get('email').trim()}\nГород: ${data.get('city').trim()}\nЭкзамен: ${data.get('exam')}\nПредмет: ${data.get('subject')}\nКомментарий: ${data.get('comment').trim() || '—'}`;
+  return `Здравствуйте! Хочу записаться на знакомство с курсом в Тех_НикА.\n\nИмя: ${data.get('name').trim()}\nФамилия: ${data.get('surname').trim()}\nТелефон: ${data.get('phone').trim()}\nПочта: ${data.get('email').trim()}\nГород: ${data.get('city').trim()}\nЭкзамен: ${data.get('exam')}\nПредмет: ${data.get('subject')}\nКомментарий: ${data.get('comment').trim() || '—'}\n\nUTM-метки:\n${campaignText()}`;
 };
 document.querySelectorAll('[data-diagnostic]').forEach(button => {
   button.addEventListener('click', () => {
@@ -50,7 +70,7 @@ form.addEventListener('submit', async event => {
   form.setAttribute('aria-busy', 'true');
   status.textContent = '';
   delete status.dataset.state;
-  const payload = Object.fromEntries(new FormData(form));
+  const payload = {...Object.fromEntries(new FormData(form)), ...campaign};
   const payloadKey = JSON.stringify(payload);
   if (pendingPayload !== payloadKey) {
     pendingPayload = payloadKey;
